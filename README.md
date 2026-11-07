@@ -14,15 +14,13 @@ Prototype académique qui exploite le dataset \*\*IDS-5-FCV\*\* : préparation d
 
 
 
-\*\*Équipe :\*\* Aya · Meriem · Zineb  |  \*\*Durée du projet :\*\* 7 jours
-
 
 
 \---
 
 
 
-\## 📌 Sommaire
+\##  Sommaire
 
 
 
@@ -60,7 +58,7 @@ Prototype académique qui exploite le dataset \*\*IDS-5-FCV\*\* : préparation d
 
 
 
-\## 🎯 Objectifs et périmètre
+\## Objectifs et périmètre
 
 
 
@@ -78,7 +76,7 @@ données → traitement → modèle → MongoDB → API → interface.
 
 
 
-\## 🏗️ Architecture
+\## Architecture
 
 
 
@@ -124,7 +122,7 @@ MongoDB sert de stockage applicatif pour les résultats du modèle et les donné
 
 
 
-> 🔒 Le frontend React ne se connecte \*\*jamais\*\* directement à MongoDB. Seul Flask détient l'URI.
+>  Le frontend React ne se connecte \*\*jamais\*\* directement à MongoDB. Seul Flask détient l'URI.
 
 
 
@@ -132,7 +130,7 @@ MongoDB sert de stockage applicatif pour les résultats du modèle et les donné
 
 
 
-\## ✨ Fonctionnalités
+\##  Fonctionnalités
 
 
 
@@ -154,7 +152,7 @@ MongoDB sert de stockage applicatif pour les résultats du modèle et les donné
 
 
 
-\## 📁 Structure du dépôt
+\##  Structure du dépôt
 
 
 
@@ -212,7 +210,7 @@ cyberguard/
 
 
 
-\## 🧰 Prérequis
+\##  Prérequis
 
 
 
@@ -236,7 +234,7 @@ cyberguard/
 
 
 
-\## 🚀 Installation et lancement
+\##  Installation et lancement
 
 
 
@@ -374,7 +372,7 @@ npm run dev
 
 
 
-> 📝 Les commandes exactes (port Flask, scripts npm) sont à ajuster selon l'implémentation finale.
+> Les commandes exactes (port Flask, scripts npm) sont à ajuster selon l'implémentation finale.
 
 
 
@@ -382,7 +380,7 @@ npm run dev
 
 
 
-\## 🗄️ Modèle de données MongoDB
+\##  Modèle de données MongoDB
 
 
 
@@ -414,7 +412,7 @@ Base : `cyberguard` — trois collections.
 
 
 
-\## 🔌 API Flask
+\## API Flask
 
 
 
@@ -444,7 +442,7 @@ Base : `cyberguard` — trois collections.
 
 
 
-\## 🤝 Contrat d'échange entre les modules
+\## Contrat d'échange entre les modules
 
 
 
@@ -468,7 +466,7 @@ Base : `cyberguard` — trois collections.
 
 
 
-\## 🌿 Workflow GitHub
+\## Workflow GitHub
 
 
 
@@ -494,7 +492,7 @@ Base : `cyberguard` — trois collections.
 
 
 
-\## ✅ Tests et critères d'acceptation
+\##  Tests et critères d'acceptation
 
 
 
@@ -522,7 +520,7 @@ Base : `cyberguard` — trois collections.
 
 
 
-\## ⚠️ Limites et précautions
+\## Limites et précautions
 
 
 
@@ -546,7 +544,7 @@ Base : `cyberguard` — trois collections.
 
 
 
-\## 🔭 Évolutions possibles
+\##  Évolutions possibles
 
 
 
@@ -558,23 +556,6 @@ Après livraison du socle : Kafka pour simuler l'arrivée d'événements, actual
 
 
 
-\## 👩‍💻 Équipe
-
-
-
-| Membre | Rôle | Livrables principaux |
-
-|---|---|---|
-
-| \*\*Aya\*\* | Data Engineering | Profilage, pipeline PySpark, Parquet, dictionnaire de données |
-
-| \*\*Meriem\*\* | Data Science | Modèle, `predictions.csv`, `metrics.json`, note d'évaluation |
-
-| \*\*Zineb\*\* | Backend, MongoDB \& Frontend | API Flask, import MongoDB, application React, documentation de lancement |
-
-
-
-\*\*Travail commun :\*\* validation du contrat de données (jour 2), relecture des Pull Requests, tests du parcours complet, préparation de la présentation.
 
 
 
