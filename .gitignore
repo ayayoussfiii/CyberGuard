@@ -7,3 +7,4 @@ data/
 *.csv
 outputs/
 models/
+docs/prepare_err.txt
