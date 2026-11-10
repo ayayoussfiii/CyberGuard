@@ -1,567 +1,310 @@
-\#  CyberGuard
+# CyberGuard
 
+**Plateforme Big Data de détection des menaces de cybersécurité**
 
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![PySpark](https://img.shields.io/badge/PySpark-4.x-E25A1C?logo=apachespark&logoColor=white)
+![Scikit-learn](https://img.shields.io/badge/Scikit--learn-ML-F7931E?logo=scikitlearn&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-NoSQL-47A248?logo=mongodb&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-REST_API-000000?logo=flask&logoColor=white)
+![React](https://img.shields.io/badge/React-Dashboard-61DAFB?logo=react&logoColor=black)
 
-\*\*Plateforme Big Data de détection des menaces de cybersécurité\*\*
+CyberGuard est un **prototype académique** qui exploite le dataset **IDS-5-FCV** pour construire une chaîne complète, reproductible et démontrable :
 
+```
+IDS-5-FCV  →  PySpark  →  Scikit-learn  →  MongoDB  →  Flask API  →  React
+```
 
+> **Périmètre.** Analyse *batch* d'un dataset public. CyberGuard n'est pas un système de surveillance réseau en production et ne déclenche aucune réponse automatique.
 
-Prototype académique qui exploite le dataset \*\*IDS-5-FCV\*\* : préparation des données avec PySpark, entraînement d'un modèle avec Scikit-learn, stockage des résultats dans MongoDB, exposition par une API Flask et visualisation dans une application React.
+---
 
+## Sommaire
 
+1. [Fonctionnalités](#fonctionnalités)
+2. [Architecture](#architecture)
+3. [Dataset](#dataset)
+4. [Structure du dépôt](#structure-du-dépôt)
+5. [Prérequis](#prérequis)
+6. [Installation et lancement](#installation-et-lancement)
+7. [Modèle de données MongoDB](#modèle-de-données-mongodb)
+8. [API REST](#api-rest)
+9. [Workflow Git](#workflow-git)
+10. [Limites et précautions](#limites-et-précautions)
+11. [Équipe](#équipe)
 
-> \*\*Chaîne complète :\*\* IDS-5-FCV → PySpark → Scikit-learn → MongoDB → Flask → React
+---
 
+## Fonctionnalités
 
+| Page | Contenu |
+|---|---|
+| **Overview** | Volume analysé, alertes détectées, répartition normal/attaque, types d'attaques les plus fréquents |
+| **Threats / Alerts** | Tableau des événements suspects : type d'attaque, classe prédite, score, date, filtres, pagination |
+| **Analytics** | Distributions par classe et par type d'attaque, graphiques comparatifs |
+| **Model Performance** | Accuracy, precision, recall, F1 par classe, macro-F1, matrice de confusion |
+| **Methodology** | Dataset, pipeline, modèle, protocole de test, limites, date d'analyse |
+| **API status** | État de Flask et de la connexion MongoDB |
 
+---
 
+## Architecture
 
-\---
-
-
-
-\##  Sommaire
-
-
-
-1\. \[Objectifs et périmètre](#-objectifs-et-périmètre)
-
-2\. \[Architecture](#-architecture)
-
-3\. \[Fonctionnalités](#-fonctionnalités)
-
-4\. \[Structure du dépôt](#-structure-du-dépôt)
-
-5\. \[Prérequis](#-prérequis)
-
-6\. \[Installation et lancement](#-installation-et-lancement)
-
-7\. \[Modèle de données MongoDB](#-modèle-de-données-mongodb)
-
-8\. \[API Flask](#-api-flask)
-
-9\. \[Contrat d'échange entre les modules](#-contrat-déchange-entre-les-modules)
-
-10\. \[Workflow GitHub](#-workflow-github)
-
-11\. \[Tests et critères d'acceptation](#-tests-et-critères-dacceptation)
-
-12\. \[Limites et précautions](#-limites-et-précautions)
-
-13\. \[Évolutions possibles](#-évolutions-possibles)
-
-14\. \[Équipe](#-équipe)
-
-
-
-\---
-
-
-
-\## Objectifs et périmètre
-
-
-
-\*\*Objectif :\*\* livrer en sept jours une chaîne complète, reproductible et démontrable :
-
-données → traitement → modèle → MongoDB → API → interface.
-
-
-
-\*\*Périmètre :\*\* analyse \*batch\* du dataset choisi. CyberGuard \*\*n'est pas\*\* un système de surveillance réseau en production et ne déclenche \*\*aucune réponse automatique\*\*.
-
-
-
-\---
-
-
-
-\## Architecture
-
-
+```mermaid
+flowchart LR
+    A[IDS-5-FCV<br/>CSV] --> B[PySpark<br/>nettoyage]
+    B --> C[(processed.parquet)]
+    C --> D[Scikit-learn<br/>entraînement]
+    D --> E[predictions.csv<br/>metrics.json]
+    E --> F[(MongoDB<br/>cyberguard)]
+    F --> G[Flask REST API]
+    G --> H[React<br/>dashboard]
+```
 
 | Couche | Technologie | Rôle |
-
 |---|---|---|
+| Source | IDS-5-FCV | Vérification de la provenance, de la licence et du schéma |
+| Traitement | Python, Pandas, PySpark | Profilage, nettoyage, export Parquet |
+| Machine Learning | Scikit-learn | Entraînement, prédiction, évaluation |
+| Base de données | MongoDB + PyMongo | Prédictions, alertes, métriques, agrégats du dashboard |
+| Backend | Flask + Flask-CORS | Accès MongoDB, endpoints JSON, validation, gestion d'erreurs |
+| Frontend | React + Plotly ou Recharts | Pages, filtres, graphiques, tableaux |
 
-| Source | IDS-5-FCV | Vérifier version, provenance, licence, fichiers et schéma |
+**Principes de conception**
 
-| Traitement | Python, Pandas, PySpark | Profilage, nettoyage, transformations, export Parquet |
+- React ne se connecte **jamais** directement à MongoDB : seul Flask détient l'URI.
+- MongoDB stocke les **résultats** utiles au dashboard, pas le dataset brut. Les gros volumes tabulaires restent en Parquet.
+- React n'a pas à recalculer les métriques : il affiche celles produites par le modèle.
 
-| Machine Learning | Scikit-learn | Entraînement, prédiction, évaluation, sauvegarde du modèle |
+---
 
-| Base de données | MongoDB + PyMongo | Stockage des prédictions, alertes, métriques et agrégats |
+## Dataset
 
-| Backend | Flask REST API + Flask-CORS | Accès MongoDB, endpoints JSON, validation, gestion des erreurs |
+**IDS-5-FCV** n'est pas un dataset unique mais une **collection** de datasets IDS (KDD Cup 99, NSL-KDD, UNSW-NB15, CIC-IDS2017, CIC-CSE-IDS2018, CIC-DDoS2019, etc.) pré-traités et partitionnés en validation croisée stratifiée à 5 plis.
 
-| Frontend | React + Plotly ou Recharts | Pages, filtres, graphiques, tableaux ; appels HTTP vers Flask |
+| | |
+|---|---|
+| **Collection** | *Collection of Intrusion Detection Systems (IDS) Datasets "Preprocessed"* |
+| **Auteurs** | J.M. Martínez-Ramírez, C.J. Carmona (Universidad de Jaén) |
+| **Publication** | 05/11/2025 : <https://hdl.handle.net/10953/6318> |
+| **Sous-ensemble utilisé** | **CIC-IDS2017, pli 2** (`fold_2_train.csv`, `fold_2_test.csv`) |
+| **Dataset d'origine** | <https://www.unb.ca/cic/datasets/ids-2017.html> |
+| **Licence** | CC BY-NC-ND selon le dépôt institutionnel, sauf indication contraire. **Les données ne sont jamais versionnées dans Git.** |
 
+### Constats sur les fichiers
 
+- **Pas d'en-tête** : 77 variables numériques nommées `f00`–`f76`, plus la colonne `label` (dernière colonne).
+- **Données brutes** : les valeurs vont d'environ −2,6·10⁸ à 2,1·10⁹ (non normalisées, malgré la description de la collection).
+- **Valeurs invalides** : infinis, `?` et valeurs mal formées dans quelques colonnes.
+- **Doublons massifs** : 504 332 lignes dupliquées dans le train.
+- **Fuite train/test** : 178 918 lignes du test (60 %) ont une copie exacte dans le train.
+- **Bruit d'étiquetage** : 161 vecteurs de variables apparaissent avec plusieurs labels différents (conservés tels quels).
 
-\### Flux de fonctionnement
+### Traitement PySpark
 
+`src/processing/prepare_data.py` applique, dans cet ordre :
 
+1. Lecture des CSV sans en-tête, nommage des colonnes, nettoyage des labels.
+2. Suppression des lignes contenant des valeurs invalides (infinis, `?`, mal formées).
+3. Dédoublonnage du train et du test.
+4. Retrait du test de toute ligne déjà présente dans le train.
+5. Génération d'un `record_id` stable (hash du contenu) et de `is_attack`.
+6. Export en Parquet.
 
-1\. \*\*Aya\*\* prépare les données avec PySpark et exporte en Parquet.
+| | Train | Test |
+|---|---:|---:|
+| Brut | 1 187 138 | 296 786 |
+| Sans valeurs invalides | 1 185 789 | 296 461 |
+| **Final** | **682 562** | **108 641** |
 
-2\. \*\*Meriem\*\* entraîne et évalue le modèle, puis génère prédictions et métriques.
+**Schéma de `processed.parquet`** : `record_id`, `split` (`train`/`test`), `f00`–`f76`, `label`, `is_attack` (82 colonnes, 791 203 lignes).
 
-3\. Un \*\*script d'import\*\* insère les résultats utiles dans MongoDB.
+| Classe | Train | Test |
+|---|---:|---:|
+| BENIGN | 527 121 | 83 167 |
+| DoS Hulk | 81 960 | 13 556 |
+| DDoS | 60 648 | 9 875 |
+| DoS GoldenEye | 4 870 | 828 |
+| DoS slowloris | 2 593 | 400 |
+| DoS Slowhttptest | 2 511 | 396 |
+| PortScan | 1 098 | 142 |
+| Bot | 724 | 110 |
+| Web Attack - Brute Force | 698 | 116 |
+| Web Attack - XSS | 305 | 44 |
+| Infiltration | 16 | 3 |
+| Web Attack - Sql Injection | 12 | 2 |
+| Heartbleed | 6 | 2 |
 
-4\. \*\*Flask\*\* interroge MongoDB et renvoie du JSON.
+> **Déséquilibre.** BENIGN domine, et plusieurs classes comptent moins de 5 exemples de test. L'accuracy seule est trompeuse : publier precision, recall et F1 **par classe**, ainsi que le macro-F1, avec les effectifs.
 
-5\. \*\*React\*\* appelle Flask et affiche indicateurs, graphiques et alertes.
+---
 
-
-
-\### Rôle de MongoDB
-
-
-
-MongoDB sert de stockage applicatif pour les résultats du modèle et les données utiles au dashboard. Il \*\*ne remplace pas PySpark\*\* et ne contient pas nécessairement tout le dataset brut : les gros volumes tabulaires restent en \*\*Parquet\*\*, et seuls les prédictions, alertes, métriques et agrégations utiles sont importés.
-
-
-
->  Le frontend React ne se connecte \*\*jamais\*\* directement à MongoDB. Seul Flask détient l'URI.
-
-
-
-\---
-
-
-
-\##  Fonctionnalités
-
-
-
-\- \*\*Overview\*\* : volume analysé, alertes détectées, répartition normal/attaque, types d'attaques les plus fréquents.
-
-\- \*\*Threats / Alerts\*\* : tableau des événements suspects (type d'attaque, classe prédite, score éventuel, date) avec filtres.
-
-\- \*\*Analytics\*\* : distributions par classe / type d'attaque et graphiques comparatifs.
-
-\- \*\*Model Performance\*\* : accuracy, precision, recall, F1, macro-F1 et matrice de confusion.
-
-\- \*\*Methodology\*\* : dataset, pipeline, modèle, protocole de test, limites et date d'analyse.
-
-\- \*\*API status\*\* : état de Flask et de la connexion MongoDB.
-
-
-
-\---
-
-
-
-\##  Structure du dépôt
-
-
+## Structure du dépôt
 
 ```
-
 cyberguard/
-
 ├── backend/
-
 │   ├── app.py
-
 │   ├── config.py
-
 │   ├── db.py
-
 │   ├── routes/                 # health, summary, metrics, predictions, alerts
-
-│   ├── scripts/import\_results.py
-
+│   ├── scripts/import_results.py
 │   └── requirements.txt
-
 ├── frontend/
-
 │   ├── src/components/
-
 │   ├── src/pages/
-
 │   ├── src/services/api.js
-
 │   └── package.json
-
 ├── src/
-
-│   ├── processing/prepare\_data.py   # pipeline PySpark
-
-│   └── detection/train.py           # entraînement et évaluation
-
-├── notebooks/data\_profile.ipynb     # profilage du dataset
-
-├── data/                            # local, ignoré par Git
-
-├── models/  outputs/  docs/
-
+│   ├── processing/
+│   │   ├── profile_data.py     # profilage du dataset
+│   │   └── prepare_data.py     # pipeline PySpark -> Parquet
+│   └── detection/train.py      # entraînement et évaluation
+├── docs/                       # fiche dataset, dictionnaire, rapports
+├── data/                       # local, ignoré par Git
+├── models/  outputs/           # locaux, ignorés par Git
 ├── .env.example
-
 ├── .gitignore
-
 └── README.md
-
 ```
 
+---
 
+## Prérequis
 
-\---
+| Outil | Version testée |
+|---|---|
+| Python | 3.11.9 |
+| Java (JDK complet) | Temurin 21 |
+| PySpark | 4.3.0 |
+| pandas | 2.3.3 (PySpark ne supporte pas encore pleinement pandas ≥ 3) |
+| pyarrow | 26.0.1 |
+| MongoDB | Community ou Atlas — *version à renseigner* |
+| Node.js | *version à renseigner* |
 
+> **Windows et Java.** PySpark 4 exige un **JDK complet** (module `jdk.incubator.vector`). Un JRE allégé, comme celui embarqué par Eclipse, provoque l'erreur `Module jdk.incubator.vector not found`. Définir `JAVA_HOME` vers le JDK.
 
+---
 
-\##  Prérequis
+## Installation et lancement
 
+Les commandes ci-dessous sont pour **Windows (cmd)**.
 
+### 1. Cloner et créer l'environnement Python
 
-\- \*\*Python\*\* 3.x (avec `venv`)
-
-\- \*\*Java\*\* (requis par PySpark)
-
-\- \*\*Node.js\*\* et \*\*npm\*\*
-
-\- \*\*MongoDB Community\*\* (local) ou \*\*MongoDB Atlas\*\*
-
-\- \*\*Git\*\*
-
-
-
->  Les versions exactes utilisées (Python, Node, MongoDB, Spark) sont à renseigner ici avant la livraison.
-
-
-
-\---
-
-
-
-\##  Installation et lancement
-
-
-
-Respecter l'ordre ci-dessous.
-
-
-
-\### 0. Cloner le dépôt
-
-
-
-```bash
-
+```bat
 git clone https://github.com/ayayoussfiii/CyberGuard.git
-
 cd CyberGuard
-
-```
-
-
-
-\### 1. MongoDB
-
-
-
-Démarrer MongoDB Community localement \*\*ou\*\* configurer Atlas, créer la base `cyberguard` et autoriser l'utilisateur applicatif. Garder l'URI privée.
-
-
-
-\### 2. Backend Flask
-
-
-
-```bash
-
-cd backend
-
 python -m venv .venv
-
-source .venv/bin/activate        # Windows : .venv\\Scripts\\activate
-
-pip install -r requirements.txt
-
+.venv\Scripts\activate
+pip install -r docs\requirements_data.txt
 ```
 
+### 2. Configurer l'environnement
 
-
-Créer un fichier `.env` à partir de `.env.example` :
-
-
-
-```env
-
-MONGO\_URI=mongodb://localhost:27017
-
-MONGO\_DB\_NAME=cyberguard
-
+```bat
+copy .env.example .env
 ```
 
+Renseigner `MONGO_URI` et `MONGO_DB_NAME` dans `.env`. **Ne jamais committer `.env`.**
 
+### 3. Préparer les données
 
-Lancer l'API :
+Télécharger l'archive `CIC_IDS2017.zip` depuis la collection IDS-5-FCV (lien dans la section [Dataset](#dataset)), extraire `fold_2_train.csv` et `fold_2_test.csv` dans `data\CIC_IDS2017\`, puis :
 
-
-
-```bash
-
-python app.py
-
+```bat
+python src\processing\profile_data.py > docs\profil_dataset.txt
+python src\processing\prepare_data.py > docs\prepare_report.txt
 ```
 
+Le fichier produit est `data\processed.parquet`.
 
+> **Windows et Parquet.** L'écriture Spark native échoue sans `winutils.exe` (`HADOOP_HOME` non défini). Le script contourne le problème : Spark traite les données, puis pandas/pyarrow écrit le Parquet.
 
-\### 3. Traitement, entraînement et import
+### 4. Entraîner le modèle
 
-
-
-Depuis la racine du projet (dataset IDS-5-FCV placé dans `data/`) :
-
-
-
-```bash
-
-\# Préparation PySpark → processed.parquet
-
-python src/processing/prepare\_data.py
-
-
-
-\# Entraînement et évaluation → predictions.csv + metrics.json
-
-python src/detection/train.py
-
-
-
-\# Import des résultats dans MongoDB (sans doublons en cas de réimport)
-
-python backend/scripts/import\_results.py
-
+```bat
+python src\detection\train.py
 ```
 
+Produit `predictions.csv`, `metrics.json` et le modèle sérialisé *(en cours de développement)*.
 
+### 5. Lancer MongoDB, l'API puis le frontend
 
-\### 4. Frontend React
+```bat
+:: Terminal 1 : API Flask
+pip install -r backend\requirements.txt
+python backend\scripts\import_results.py
+python backend\app.py
 
-
-
-```bash
-
+:: Terminal 2 : frontend React
 cd frontend
-
 npm install
-
-```
-
-
-
-Définir l'URL de l'API (exemple avec Vite) dans `frontend/.env` :
-
-
-
-```env
-
-VITE\_API\_BASE\_URL=http://localhost:5000
-
-```
-
-
-
-```bash
-
 npm run dev
-
 ```
 
+Définir l'URL de l'API dans `frontend\.env` (par exemple `VITE_API_BASE_URL=http://localhost:5000`).
 
+---
 
-> Les commandes exactes (port Flask, scripts npm) sont à ajuster selon l'implémentation finale.
+## Modèle de données MongoDB
 
+Base : `cyberguard`. Index sur `record_id`, `created_at`, `predicted_label` et `severity`.
 
+| Collection | Champs |
+|---|---|
+| `predictions` | `record_id`, `true_label`, `predicted_label`, `attack_type`, `score` (facultatif), `created_at` |
+| `metrics` | `run_id`, `model_name`, `accuracy`, `precision`, `recall`, `f1`, `macro_f1`, `confusion_matrix`, `test_size`, `created_at` |
+| `alerts` | `record_id`, `severity` (règle documentée), `attack_type`, `predicted_label`, `score`, `status`, `created_at` |
 
-\---
+Le script d'import est **idempotent** : une ré-exécution ne crée pas de doublons (clé `record_id` stable).
 
+---
 
-
-\##  Modèle de données MongoDB
-
-
-
-Base : `cyberguard` — trois collections.
-
-
-
-| Collection | Champs | Usage |
-
-|---|---|---|
-
-| `predictions` | `record\_id`, `true\_label`, `predicted\_label`, `attack\_type` (si dispo), `score` (facultatif), `created\_at` | Une ligne par prédiction utile |
-
-| `metrics` | `run\_id`, `model\_name`, `accuracy`, `precision`, `recall`, `f1`, `macro\_f1`, `confusion\_matrix`, `test\_size`, `created\_at` | Un document par exécution |
-
-| `alerts` | `record\_id`, `severity` (règle documentée), `attack\_type`, `predicted\_label`, `score`, `status`, `created\_at` | Dérivée des prédictions classées suspectes |
-
-
-
-\*\*Index :\*\* `record\_id`, `created\_at`, ainsi que les champs fréquemment filtrés (`predicted\_label`, `severity`).
-
-
-
-> Les champs définitifs sont validés au jour 2, après inspection du schéma réel du dataset. Les dates sont stockées en BSON Date / ISO 8601.
-
-
-
-\---
-
-
-
-\## API Flask
-
-
+## API REST
 
 | Méthode | Endpoint | Description |
-
 |---|---|---|
-
 | GET | `/api/health` | Statut de Flask et de la connexion MongoDB |
-
 | GET | `/api/summary` | Volumes, alertes, répartition normal/attaque |
-
 | GET | `/api/metrics` | Métriques et matrice de confusion |
-
-| GET | `/api/alerts` | Alertes avec filtres et pagination |
-
-| GET | `/api/predictions` | Prédictions avec filtres |
-
+| GET | `/api/alerts` | Alertes, avec filtres et pagination |
+| GET | `/api/predictions` | Prédictions, avec filtres |
 | GET | `/api/distribution` | Agrégations par classe / type d'attaque |
 
+Tous les endpoints valident leurs paramètres, **limitent le nombre de résultats**, renvoient du JSON et gèrent l'indisponibilité de MongoDB.
 
+---
 
-\*\*Règles :\*\* validation des paramètres, résultats toujours limités et paginés, gestion des erreurs de connexion MongoDB. React \*\*ne recalcule pas\*\* les métriques du modèle.
+## Workflow Git
 
+- `main` : version stable. `develop` : intégration.
+- Une branche par membre : `feature/aya-data-pipeline`, `feature/meriem-ml`, `feature/zineb-react-flask-mongodb`.
+- Commits fréquents, puis **Pull Request vers `develop`**, relue par une autre membre avant fusion.
+- Prévenir l'équipe avant toute modification d'un contrat de données ou d'un endpoint.
 
+**Exclus de Git** : `.venv/`, `node_modules/`, `__pycache__/`, `.env`, `data/`, `*.parquet`, `*.csv`, `outputs/`, `models/`.
 
-\---
+---
 
+## Limites et précautions
 
+- Prototype académique : un seul pli (le pli 2) de CIC-IDS2017 est exploité, les autres plis de l'archive téléchargée étant corrompus.
+- Résultats valables pour ce dataset uniquement : pas de garantie de généralisation à du trafic réel.
+- Le nettoyage change la distribution d'origine (le test passe de 20 % à environ 14 % du total après retrait des doublons et de la fuite).
+- Les classes les plus rares (Heartbleed, Infiltration, SQL Injection) ont très peu d'exemples de test : leurs scores sont statistiquement instables.
+- Fuite de données : ajuster toute transformation apprise (mise à l'échelle, sélection de variables) sur le **train uniquement**.
+- CORS : configuré pour l'origine React en développement, à restreindre en déploiement.
 
-\## Contrat d'échange entre les modules
+---
 
 
 
-| Élément | Responsable | Contrat |
+## Références
 
-|---|---|---|
+- Martínez-Ramírez, J.M. et Carmona, C.J., *Collection of Intrusion Detection Systems (IDS) Datasets "Preprocessed"*, Universidad de Jaén, 2025. <https://hdl.handle.net/10953/6318>
+- Canadian Institute for Cybersecurity, *CIC-IDS2017*. <https://www.unb.ca/cic/datasets/ids-2017.html>
 
-| Données préparées | Aya | `processed.parquet` : lignes nettoyées, variables et cible identifiée |
+## Licence du code
 
-| Prédictions | Meriem | `predictions.csv` : identifiant stable, vraie classe, prédiction, score facultatif |
-
-| Métriques | Meriem | `metrics.json` : accuracy, precision, recall, F1, macro-F1, taille du test, matrice |
-
-| Import MongoDB | Zineb + Meriem | Import des prédictions et métriques, mapping documenté, pas de doublons |
-
-| API et UI | Zineb | Flask renvoie du JSON ; React consomme uniquement les endpoints Flask |
-
-
-
-\---
-
-
-
-\## Workflow GitHub
-
-
-
-\- `main` : version stable — `develop` : intégration.
-
-\- Branches de travail : `feature/aya-data-pipeline`, `feature/meriem-ml`, `feature/zineb-react-flask-mongodb`.
-
-\- Commits fréquents, push de sa branche, \*\*Pull Request vers `develop`\*\*, relue/testée par une autre membre avant fusion.
-
-\- Synchroniser les branches après chaque fusion ; prévenir l'équipe avant toute modification des contrats ou endpoints.
-
-
-
-\*\*Exclus de Git\*\* (`.gitignore`) : `.venv/`, `node\_modules/`, `\_\_pycache\_\_/`, `.env`, `data/`, `\*.parquet`, `\*.csv`, `outputs/`, `models/`.
-
-
-
-> Ne jamais versionner le dataset brut, les gros artefacts ou l'URI MongoDB. Utiliser `.env.example` avec des valeurs factices.
-
-
-
-\---
-
-
-
-\##  Tests et critères d'acceptation
-
-
-
-\- \[ ] Dépôt clonable et README compréhensible
-
-\- \[ ] MongoDB accessible depuis Flask ; `/api/health` indique le statut
-
-\- \[ ] PySpark produit un Parquet cohérent
-
-\- \[ ] Split train/test sans fuite de cible ; modèle et métriques reproductibles
-
-\- \[ ] Prédictions et métriques réelles importées dans MongoDB sans doublons involontaires
-
-\- \[ ] Endpoints Flask : JSON correct, erreurs gérées, résultats limités
-
-\- \[ ] React affiche les données issues de MongoDB via Flask, sans faux résultats résiduels
-
-\- \[ ] Graphiques et filtres reflètent les résultats réels
-
-\- \[ ] Aucun secret dans Git ; limites documentées
-
-
-
-\---
-
-
-
-\## Limites et précautions
-
-
-
-\- Vérifier la provenance, la licence, la version et le schéma d'IDS-5-FCV : toutes les variantes n'ont pas forcément les mêmes colonnes.
-
-\- Contrôler valeurs manquantes, doublons, valeurs infinies, déséquilibre des classes et biais.
-
-\- \*\*Éviter la fuite de données\*\* : split avant tout ajustement appris ; transformations ajustées sur le train uniquement.
-
-\- En cas de déséquilibre, publier precision, recall et F1 \*\*par classe\*\* ainsi que le macro-F1, pas uniquement l'accuracy.
-
-\- Configurer CORS pour l'origine React et restreindre les origines en déploiement.
-
-\- Prototype académique en analyse batch : pas de surveillance temps réel, pas de réponse automatique.
-
-\- Kafka, HDFS et Elasticsearch sont facultatifs et ne sont pas utilisés dans le socle.
-
-
-
-\---
-
-
-
-\##  Évolutions possibles
-
-
-
-Après livraison du socle : Kafka pour simuler l'arrivée d'événements, actualisation périodique, authentification, filtres plus avancés.
-
-
-
-\---
-
-
-
-
-
-
-\---
-
-
-
-\*Projet académique — CyberGuard, 2026.\*
-
+*À définir par l'équipe.* Les données restent soumises à la licence de leur source.
