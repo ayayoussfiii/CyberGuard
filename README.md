@@ -226,7 +226,7 @@ cyberguard/
 
 
 
-> 📝 Les versions exactes utilisées (Python, Node, MongoDB, Spark) sont à renseigner ici avant la livraison.
+>  Les versions exactes utilisées (Python, Node, MongoDB, Spark) sont à renseigner ici avant la livraison.
 
 
 
