@@ -1,0 +1,160 @@
+
+--- TRAIN brut : 1187138 lignes ---
++--------------------------+------+
+|label                     |count |
++--------------------------+------+
+|BENIGN                    |839412|
+|DoS Hulk                  |147887|
+|PortScan                  |101507|
+|DDoS                      |81838 |
+|DoS GoldenEye             |6587  |
+|DoS slowloris             |3709  |
+|DoS Slowhttptest          |3519  |
+|Bot                       |1257  |
+|Web Attack - Brute Force  |964   |
+|Web Attack - XSS          |417   |
+|Infiltration              |22    |
+|Web Attack - Sql Injection|13    |
+|Heartbleed                |6     |
++--------------------------+------+
+
+
+--- TEST brut : 296786 lignes ---
++--------------------------+------+
+|label                     |count |
++--------------------------+------+
+|BENIGN                    |209853|
+|DoS Hulk                  |36971 |
+|PortScan                  |25376 |
+|DDoS                      |20461 |
+|DoS GoldenEye             |1647  |
+|DoS slowloris             |927   |
+|DoS Slowhttptest          |880   |
+|Bot                       |315   |
+|Web Attack - Brute Force  |241   |
+|Web Attack - XSS          |104   |
+|Infiltration              |6     |
+|Web Attack - Sql Injection|3     |
+|Heartbleed                |2     |
++--------------------------+------+
+
+
+--- TRAIN sans valeurs invalides : 1185789 lignes ---
++--------------------------+------+
+|label                     |count |
++--------------------------+------+
+|BENIGN                    |838753|
+|DoS Hulk                  |147276|
+|PortScan                  |101434|
+|DDoS                      |81836 |
+|DoS GoldenEye             |6587  |
+|DoS slowloris             |3709  |
+|DoS Slowhttptest          |3519  |
+|Bot                       |1253  |
+|Web Attack - Brute Force  |964   |
+|Web Attack - XSS          |417   |
+|Infiltration              |22    |
+|Web Attack - Sql Injection|13    |
+|Heartbleed                |6     |
++--------------------------+------+
+
+
+--- TEST sans valeurs invalides : 296461 lignes ---
++--------------------------+------+
+|label                     |count |
++--------------------------+------+
+|BENIGN                    |209703|
+|DoS Hulk                  |36814 |
+|PortScan                  |25359 |
+|DDoS                      |20460 |
+|DoS GoldenEye             |1647  |
+|DoS slowloris             |927   |
+|DoS Slowhttptest          |880   |
+|Bot                       |315   |
+|Web Attack - Brute Force  |241   |
+|Web Attack - XSS          |104   |
+|Infiltration              |6     |
+|Web Attack - Sql Injection|3     |
+|Heartbleed                |2     |
++--------------------------+------+
+
+
+--- TRAIN final : 682562 lignes ---
++--------------------------+------+
+|label                     |count |
++--------------------------+------+
+|BENIGN                    |527121|
+|DoS Hulk                  |81960 |
+|DDoS                      |60648 |
+|DoS GoldenEye             |4870  |
+|DoS slowloris             |2593  |
+|DoS Slowhttptest          |2511  |
+|PortScan                  |1098  |
+|Bot                       |724   |
+|Web Attack - Brute Force  |698   |
+|Web Attack - XSS          |305   |
+|Infiltration              |16    |
+|Web Attack - Sql Injection|12    |
+|Heartbleed                |6     |
++--------------------------+------+
+
+
+--- TEST final : 108641 lignes ---
++--------------------------+-----+
+|label                     |count|
++--------------------------+-----+
+|BENIGN                    |83167|
+|DoS Hulk                  |13556|
+|DDoS                      |9875 |
+|DoS GoldenEye             |828  |
+|DoS slowloris             |400  |
+|DoS Slowhttptest          |396  |
+|PortScan                  |142  |
+|Web Attack - Brute Force  |116  |
+|Bot                       |110  |
+|Web Attack - XSS          |44   |
+|Infiltration              |3    |
+|Heartbleed                |2    |
+|Web Attack - Sql Injection|2    |
++--------------------------+-----+
+
+
+Vecteurs de variables avec plusieurs labels differents : 161
+
+Donnees recuperees : (791203, 81)
+Parquet ecrit dans data/processed.parquet
+Relecture : (791203, 81)
+record_id uniques : 791203 / 791203
+split  label                     
+test   BENIGN                         83167
+       Bot                              110
+       DDoS                            9875
+       DoS GoldenEye                    828
+       DoS Hulk                       13556
+       DoS Slowhttptest                 396
+       DoS slowloris                    400
+       Heartbleed                         2
+       Infiltration                       3
+       PortScan                         142
+       Web Attack - Brute Force         116
+       Web Attack - Sql Injection         2
+       Web Attack - XSS                  44
+train  BENIGN                        527121
+       Bot                              724
+       DDoS                           60648
+       DoS GoldenEye                   4870
+       DoS Hulk                       81960
+       DoS Slowhttptest                2511
+       DoS slowloris                   2593
+       Heartbleed                         6
+       Infiltration                      16
+       PortScan                        1098
+       Web Attack - Brute Force         698
+       Web Attack - Sql Injection        12
+       Web Attack - XSS                 305
+Opération réussie : le processus de PID 3040 (processus enfant de PID 42968) a été
+arrêté.
+Opération réussie : le processus de PID 42968 (processus enfant de PID 42384) a été
+arrêté.
+Opération réussie : le processus de PID 42384 (processus enfant de PID 35628) a été
+arrêté.
