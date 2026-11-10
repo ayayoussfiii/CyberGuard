@@ -1,0 +1,78 @@
+=== TRAIN ===
+Variables de type texte : ['f13', 'f52', 'f53']
+
+--- f13 : 696 valeurs non numeriques ---
+f13
+?    696
+
+--- f52 : 1 valeurs non numeriques ---
+f52
+6.5.1    1
+
+--- f53 : 1 valeurs non numeriques ---
+f53
+2321.4.1    1
+
+Dimensions : (1187138, 78)
+
+=== Valeurs problematiques ===
+Infinis            : 2000
+Manquants/convertis: 698
+
+=== Plage (valeurs finies) : normalise ou brut ? ===
+min global : -261000000.0
+max global : 2070000000.0
+Colonnes avec valeurs negatives : 12
+
+=== Doublons ===
+Doublons dans train : 504332
+
+=== Classes (label) ===
+label
+BENIGN                          839412
+'DoS Hulk'                      147887
+PortScan                        101507
+DDoS                             81838
+'DoS GoldenEye'                   6587
+'DoS slowloris'                   3709
+'DoS Slowhttptest'                3519
+Bot                               1257
+'Web Attack � Brute Force'         964
+'Web Attack � XSS'                 417
+Infiltration                        22
+'Web Attack � Sql Injection'        13
+Heartbleed                           6
+label
+BENIGN                          70.709
+'DoS Hulk'                      12.457
+PortScan                         8.551
+DDoS                             6.894
+'DoS GoldenEye'                  0.555
+'DoS slowloris'                  0.312
+'DoS Slowhttptest'               0.296
+Bot                              0.106
+'Web Attack � Brute Force'       0.081
+'Web Attack � XSS'               0.035
+Infiltration                     0.002
+'Web Attack � Sql Injection'     0.001
+Heartbleed                       0.001
+
+=== TEST ===
+Dimensions : (296786, 78)
+label
+BENIGN                          209853
+'DoS Hulk'                       36971
+PortScan                         25376
+DDoS                             20461
+'DoS GoldenEye'                   1647
+'DoS slowloris'                    927
+'DoS Slowhttptest'                 880
+Bot                                315
+'Web Attack � Brute Force'         241
+'Web Attack � XSS'                 104
+Infiltration                         6
+'Web Attack � Sql Injection'         3
+Heartbleed                           2
+
+=== Fuite train/test ===
+Lignes de test identiques a une ligne du train : 178918 / 296786
