@@ -117,7 +117,7 @@ flowchart LR
 | Sans valeurs invalides | 1 185 789 | 296 461 |
 | **Final** | **682 562** | **108 641** |
 
-**Schéma de `processed.parquet`** : `record_id`, `split` (`train`/`test`), `f00`–`f76`, `label`, `is_attack` (82 colonnes, 791 203 lignes).
+**Schéma de `processed.parquet`** : `record_id`, `split` (`train`/`test`), `f00`–`f76`, `label`, `is_attack` (81 colonnes, 791 203 lignes).
 
 | Classe | Train | Test |
 |---|---:|---:|
