@@ -90,7 +90,7 @@ def fix_numeric(df, label, cols=None):
 def basic_clean(df, label, sample, num_cols_fixed=None):
     if sample:
         df = df.sample(fraction=sample, seed=42)
-    df = df.withColumn(label, F.trim(F.col(label).cast("string")))
+    df = df.withColumn(label, F.trim(F.regexp_replace(F.regexp_replace(F.col(label).cast("string"), r"[^\x20-\x7E]", "-"), "'", "")))
     df = df.filter(F.col(label).isNotNull() & (F.col(label) != ""))
     df, converted = fix_numeric(df, label, num_cols_fixed)
     num_cols = [f.name for f in df.schema.fields if isinstance(f.dataType, NUMERIC) and f.name != label]
@@ -200,7 +200,7 @@ def main():
 
     spark = (SparkSession.builder.appName("CyberGuard-prepare")
              .config("spark.sql.shuffle.partitions", "64")
-             .config("spark.sql.ansi.enabled", "false")
+             .config("spark.sql.ansi.enabled", "false").config("spark.driver.memory", "6g").config("spark.sql.shuffle.partitions", "64")
              .config("spark.driver.memory", args.driver_memory).getOrCreate())
     spark.sparkContext.setLogLevel("WARN")
     os.makedirs(args.output_dir, exist_ok=True)
