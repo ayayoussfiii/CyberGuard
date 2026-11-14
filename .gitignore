@@ -8,3 +8,10 @@ data/
 outputs/
 models/
 docs/prepare_err.txt
+*.zip
+spark-warehouse/
+.ipynb_checkpoints/
+*.zip
+spark-warehouse/
+.ipynb_checkpoints/
+!docs/data_dictionary.csv
