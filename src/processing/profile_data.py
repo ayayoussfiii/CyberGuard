@@ -16,7 +16,7 @@ import pandas as pd
 LABEL_CANDIDATES = ["label", "class", "attack_cat", "attack", "attack_type", "target", "category"]
 
 
-def load(path, nrows=None):
+def load(path, nrows=None, no_header=False, columns=None):
     if os.path.isdir(path):
         files = sorted(glob.glob(os.path.join(path, "**", "*.csv"), recursive=True)
                        + glob.glob(os.path.join(path, "**", "*.parquet"), recursive=True))
@@ -27,7 +27,19 @@ def load(path, nrows=None):
     frames = []
     for f in files:
         print(f"Lecture : {f}")
-        df = pd.read_parquet(f) if f.endswith(".parquet") else pd.read_csv(f, nrows=nrows, low_memory=False)
+        if f.endswith(".parquet"):
+            df = pd.read_parquet(f)
+        else:
+            df = pd.read_csv(f, nrows=nrows, low_memory=False, na_values=["?"],
+                             header=None if no_header else "infer")
+            if no_header:
+                n = df.shape[1]
+                if columns:
+                    if len(columns) != n:
+                        raise SystemExit("--columns-file contient %d noms mais le CSV a %d colonnes" % (len(columns), n))
+                    df.columns = columns
+                else:
+                    df.columns = [f"f{i + 1:02d}" for i in range(n - 1)] + ["label"]
         df["_source_file"] = os.path.basename(f)
         frames.append(df)
     return pd.concat(frames, ignore_index=True), files
@@ -50,10 +62,16 @@ def main():
     ap.add_argument("--label", default=None, help="Nom de la colonne cible (sinon détection auto)")
     ap.add_argument("--nrows", type=int, default=None, help="Limiter les lignes lues par fichier CSV")
     ap.add_argument("--out-dir", default="docs")
+    ap.add_argument("--no-header", action="store_true", help="CSV sans ligne d'en-tete (derniere colonne = cible)")
+    ap.add_argument("--columns-file", default=None, help="Fichier texte : un nom de colonne par ligne")
     args = ap.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
-    df, files = load(args.input, args.nrows)
+    col_names = None
+    if args.columns_file:
+        with open(args.columns_file, encoding="utf-8") as fh:
+            col_names = [ln.strip() for ln in fh if ln.strip()]
+    df, files = load(args.input, args.nrows, args.no_header, col_names)
     df.columns = [c.strip() for c in df.columns]
     feature_cols = [c for c in df.columns if c != "_source_file"]
     label = detect_label(feature_cols, args.label)

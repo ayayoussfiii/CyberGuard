@@ -28,7 +28,7 @@ from pyspark.sql.types import DoubleType, FloatType, IntegerType, LongType, Shor
 
 LABEL_CANDIDATES = ["label", "class", "attack_cat", "attack", "attack_type", "target", "category"]
 NUMERIC = (DoubleType, FloatType, IntegerType, LongType, ShortType, DecimalType)
-BAD_TOKENS = ["inf", "-inf", "+inf", "infinity", "-infinity", "+infinity", "nan", ""]
+BAD_TOKENS = ["inf", "-inf", "+inf", "infinity", "-infinity", "+infinity", "nan", "?", ""]
 
 
 def norm(name):
@@ -44,7 +44,7 @@ def unique_names(names):
     return out
 
 
-def read_df(spark, path):
+def read_df(spark, path, no_header=False, columns=None):
     if os.path.isdir(path):
         csvs = sorted(glob.glob(os.path.join(path, "**", "*.csv"), recursive=True))
         pqs = sorted(glob.glob(os.path.join(path, "**", "*.parquet"), recursive=True))
@@ -55,7 +55,15 @@ def read_df(spark, path):
         raise SystemExit(f"Aucun fichier CSV/Parquet trouvé dans {path}")
     print(f"{path} : {len(paths)} fichier(s) {fmt}")
     if fmt == "csv":
-        df = spark.read.option("header", True).option("inferSchema", True).csv(paths)
+        df = spark.read.option("header", not no_header).option("inferSchema", True).csv(paths)
+        if no_header:
+            n = len(df.columns)
+            if columns:
+                if len(columns) != n:
+                    raise SystemExit("--columns-file contient %d noms mais le CSV a %d colonnes" % (len(columns), n))
+                df = df.toDF(*columns)
+            else:
+                df = df.toDF(*([f"f{i + 1:02d}" for i in range(n - 1)] + ["label"]))
     else:
         df = spark.read.parquet(*paths)
     return df.toDF(*unique_names(df.columns))
@@ -100,16 +108,66 @@ def finish(df, feats, label, normal, prefix):
     return df.select("record_id", *feats, label, "is_attack")
 
 
+WRITER = "auto"
+
+
+def _arrow_type(dt):
+    import pyarrow as pa
+    name = dt.simpleString()
+    table = {"int": pa.int32(), "bigint": pa.int64(), "smallint": pa.int16(), "tinyint": pa.int8(),
+             "double": pa.float64(), "float": pa.float32(), "boolean": pa.bool_()}
+    return table.get(name, pa.string())
+
+
+def _write_pyarrow(df, path, batch_rows=50000):
+    """Ecrit le DataFrame en Parquet par morceaux, sans Hadoop (memoire maitrisee)."""
+    import shutil
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    fields = df.schema.fields
+    schema = pa.schema([(f.name, _arrow_type(f.dataType)) for f in fields])
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+
+    def flush(writer, rows):
+        writer.write_table(pa.Table.from_pylist([r.asDict() for r in rows], schema=schema))
+
+    with pq.ParquetWriter(path, schema) as writer:
+        batch = []
+        for row in df.toLocalIterator():
+            batch.append(row)
+            if len(batch) >= batch_rows:
+                flush(writer, batch)
+                batch = []
+        if batch:
+            flush(writer, batch)
+    return pq.ParquetFile(path).metadata.num_rows
+
+
 def write_and_describe(spark, df, path, label):
-    df.write.mode("overwrite").parquet(path)
-    out = spark.read.parquet(path)
-    return {
+    for f in df.schema.fields:
+        if f.dataType.simpleString().startswith("decimal"):
+            df = df.withColumn(f.name, F.col(f.name).cast("double"))
+    df = df.persist()
+    n = df.count()
+    res = {
         "fichier": path,
-        "lignes": out.count(),
-        "colonnes": len(out.columns),
-        "distribution_cible": {r[label]: r["count"] for r in out.groupBy(label).count().collect()},
-        "distribution_is_attack": {str(r["is_attack"]): r["count"] for r in out.groupBy("is_attack").count().collect()},
+        "lignes": n,
+        "colonnes": len(df.columns),
+        "distribution_cible": {r[label]: r["count"] for r in df.groupBy(label).count().collect()},
+        "distribution_is_attack": {str(r["is_attack"]): r["count"] for r in df.groupBy("is_attack").count().collect()},
     }
+    writer = WRITER if WRITER != "auto" else ("pyarrow" if os.name == "nt" else "spark")
+    if writer == "pyarrow":
+        written = _write_pyarrow(df, path)
+        if written != n:
+            raise SystemExit("Fichier incomplet : %d lignes ecrites sur %d" % (written, n))
+    else:
+        df.write.mode("overwrite").parquet(path)
+    df.unpersist()
+    res["ecrit_avec"] = writer
+    return res
 
 
 def main():
@@ -118,6 +176,11 @@ def main():
     ap.add_argument("--test", help="Fichier/dossier de test (mode train/test)")
     ap.add_argument("--input", help="Un seul jeu de données (mode simple)")
     ap.add_argument("--output-dir", default="data")
+    ap.add_argument("--writer", choices=["auto", "spark", "pyarrow"], default="auto",
+                    help="Ecriture du Parquet (auto = pyarrow sous Windows)")
+    ap.add_argument("--driver-memory", default="4g", help="Memoire de Spark (ex. 4g, 6g)")
+    ap.add_argument("--no-header", action="store_true", help="CSV sans ligne d'en-tete (derniere colonne = cible)")
+    ap.add_argument("--columns-file", default=None, help="Fichier texte : un nom de colonne par ligne")
     ap.add_argument("--label", default=None, help="Colonne cible (sinon détection auto)")
     ap.add_argument("--normal-labels", default="benign,normal,0",
                     help="Valeurs de la cible = trafic normal (séparées par des virgules)")
@@ -126,6 +189,8 @@ def main():
     ap.add_argument("--keep-na", action="store_true", help="Ne pas supprimer les lignes avec nulls")
     ap.add_argument("--report", default="outputs/prepare_report.json")
     args = ap.parse_args()
+    global WRITER
+    WRITER = args.writer
 
     split_mode = bool(args.train or args.test)
     if split_mode and not (args.train and args.test):
@@ -134,12 +199,18 @@ def main():
         raise SystemExit("Fournir soit --train et --test, soit --input")
 
     spark = (SparkSession.builder.appName("CyberGuard-prepare")
-             .config("spark.sql.shuffle.partitions", "64").getOrCreate())
+             .config("spark.sql.shuffle.partitions", "64")
+             .config("spark.sql.ansi.enabled", "false")
+             .config("spark.driver.memory", args.driver_memory).getOrCreate())
     spark.sparkContext.setLogLevel("WARN")
     os.makedirs(args.output_dir, exist_ok=True)
 
-    train = read_df(spark, args.train if split_mode else args.input)
-    test = read_df(spark, args.test) if split_mode else None
+    col_names = None
+    if args.columns_file:
+        with open(args.columns_file, encoding="utf-8") as fh:
+            col_names = [ln.strip() for ln in fh if ln.strip()]
+    train = read_df(spark, args.train if split_mode else args.input, args.no_header, col_names)
+    test = read_df(spark, args.test, args.no_header, col_names) if split_mode else None
     report = {"mode": "train_test" if split_mode else "simple",
               "lignes_lues_train": train.count(), "colonnes_lues": len(train.columns)}
     if split_mode:

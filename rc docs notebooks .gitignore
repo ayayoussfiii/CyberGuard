@@ -1,0 +1,69 @@
+warning: in the working copy of 'docs/dataset_card.md', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/docs/dataset_card.md b/docs/dataset_card.md[m
+[1mindex e69de29..655bbf1 100644[m
+[1m--- a/docs/dataset_card.md[m
+[1m+++ b/docs/dataset_card.md[m
+[36m@@ -0,0 +1,63 @@[m
+[32m+[m[32m# Fiche dataset - CyberGuard[m
+[32m+[m
+[32m+[m[32m> Rédigée par Aya (Data Engineering). Les champs marqués **À COMPLÉTER** sont à remplir[m
+[32m+[m[32m> après vérification de la source ; ne rien inventer.[m
+[32m+[m
+[32m+[m[32m## Identification[m
+[32m+[m
+[32m+[m[32m| Élément | Valeur |[m
+[32m+[m[32m|---|---|[m
+[32m+[m[32m| Nom | CIC-IDS2017, découpage en 5 folds (IDS-5-FCV) |[m
+[32m+[m[32m| Origine du trafic | Canadian Institute for Cybersecurity (Université du Nouveau-Brunswick) |[m
+[32m+[m[32m| Lien de téléchargement utilisé | **À COMPLÉTER** (URL exacte de la source du zip) |[m
+[32m+[m[32m| Date de téléchargement | **À COMPLÉTER** |[m
+[32m+[m[32m| Licence / conditions d'usage | **À COMPLÉTER** (vérifier la page officielle ; citation de la publication demandée en général) |[m
+[32m+[m[32m| Publication à citer | **À COMPLÉTER** (référence officielle de CIC-IDS2017) |[m
+[32m+[m[32m| Fichiers utilisés | `fold_2_train.csv`, `fold_2_test.csv` |[m
+[32m+[m
+[32m+[m[32m> Vérifier que la variante téléchargée correspond bien à « IDS-5-FCV » du cahier des charges[m
+[32m+[m[32m> et le confirmer avec Meriem et Zineb.[m
+[32m+[m
+[32m+[m[32m## Structure[m
+[32m+[m
+[32m+[m[32mLe zip contient des fichiers `fold_k_train.csv` / `fold_k_test.csv` (validation croisée en 5 plis).[m
+[32m+[m[32mUn même enregistrement peut apparaître dans le train de plusieurs folds et dans le test d'un seul.[m
+[32m+[m[32mLe projet utilise **un seul fold (fold 2)** : train et test sont déjà séparés, sans mélange.[m
+[32m+[m
+[32m+[m[32m## Volumes bruts (fold 2)[m
+[32m+[m
+[32m+[m[32m| Jeu | Lignes |[m
+[32m+[m[32m|---|---|[m
+[32m+[m[32m| Train | 1 187 138 |[m
+[32m+[m[32m| Test | 296 786 |[m
+[32m+[m
+[32m+[m[32m## Classes (cible : colonne `label`, 13 classes)[m
+[32m+[m
+[32m+[m[32m| Classe | Train | Test |[m
+[32m+[m[32m|---|---|---|[m
+[32m+[m[32m| BENIGN | 839 412 | 209 853 |[m
+[32m+[m[32m| DoS Hulk | 147 887 | 36 971 |[m
+[32m+[m[32m| PortScan | 101 507 | 25 376 |[m
+[32m+[m[32m| DDoS | 81 838 | 20 461 |[m
+[32m+[m[32m| DoS GoldenEye | 6 587 | 1 647 |[m
+[32m+[m[32m| DoS slowloris | 3 709 | 927 |[m
+[32m+[m[32m| DoS Slowhttptest | 3 519 | 880 |[m
+[32m+[m[32m| Bot | 1 257 | 315 |[m
+[32m+[m[32m| Web Attack - Brute Force | 964 | 241 |[m
+[32m+[m[32m| Web Attack - XSS | 417 | 104 |[m
+[32m+[m[32m| Infiltration | 22 | 6 |[m
+[32m+[m[32m| Web Attack - Sql Injection | 13 | 3 |[m
+[32m+[m[32m| Heartbleed | 6 | 2 |[m
+[32m+[m
+[32m+[m[32m## Points d'attention[m
+[32m+[m
+[32m+[m[32m- **Fort déséquilibre** : BENIGN représente environ 70 % des lignes ; plusieurs classes ont moins de 30 lignes[m
+[32m+[m[32m  (Infiltration, Web Attack - Sql Injection, Heartbleed). Les métriques d'une classe de 2 à 6 lignes de test[m
+[32m+[m[32m  ne sont pas fiables : publier precision/recall/F1 par classe et macro-F1, pas seulement l'accuracy.[m
+[32m+[m[32m- Les CSV de ce type contiennent souvent des valeurs `Infinity` / `NaN` : elles sont traitées par le pipeline.[m
+[32m+[m[32m- Après nettoyage : nombre de colonnes, colonnes supprimées, lignes supprimées -> voir `docs/transformations.md`[m
+[32m+[m[32m  (**À COMPLÉTER** avec les chiffres de `outputs/prepare_report.json` après le traitement complet).[m
+[32m+[m
+[32m+[m[32m## Colonnes[m
+[32m+[m
+[32m+[m[32mDictionnaire complet : `docs/data_dictionary.csv` (généré par `profile_data.py`).[m
