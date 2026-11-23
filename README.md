@@ -266,13 +266,15 @@ Le script d'import est **idempotent** : une ré-exécution ne crée pas de doubl
 | Méthode | Endpoint | Description |
 |---|---|---|
 | GET | `/api/health` | Statut de Flask et de la connexion MongoDB |
-| GET | `/api/summary` | Volumes, alertes, répartition normal/attaque |
-| GET | `/api/metrics` | Métriques et matrice de confusion |
-| GET | `/api/alerts` | Alertes, avec filtres et pagination |
-| GET | `/api/predictions` | Prédictions, avec filtres |
+| GET | `/api/summary` | Volumes, alertes, répartition normal/attaque selon `predicted_label` |
+| GET | `/api/metrics` | Métriques et matrice de confusion (`limit`) |
+| GET | `/api/alerts` | Alertes avec filtres exacts et pagination |
+| GET | `/api/predictions` | Prédictions avec filtres exacts et pagination |
 | GET | `/api/distribution` | Agrégations par classe / type d'attaque |
 
-Tous les endpoints valident leurs paramètres, **limitent le nombre de résultats**, renvoient du JSON et gèrent l'indisponibilité de MongoDB.
+`/api/metrics` accepte `limit` (100 par défaut, de 1 à 500). `/api/alerts` et `/api/predictions` acceptent `page` (1 par défaut), `limit` (100 par défaut, de 1 à 500) et des filtres par égalité exacte. Les filtres d'alertes sont `record_id`, `severity`, `status`, `attack_type` et `predicted_label`; ceux des prédictions sont `record_id`, `true_label`, `predicted_label` et `attack_type`. Les listes sont triées par `created_at` décroissant. Les paramètres invalides ou inconnus renvoient HTTP 400; les erreurs MongoDB renvoient HTTP 500.
+
+Tous les endpoints renvoient du JSON et gèrent l'indisponibilité de MongoDB.
 
 ---
 

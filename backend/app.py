@@ -2,7 +2,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from db import client
-from routes import summary_bp
+from routes import alerts_bp, distribution_bp, metrics_bp, predictions_bp, summary_bp
 
 # Création de l'application Flask
 app = Flask(__name__)
@@ -12,6 +12,10 @@ CORS(app)
 
 # Enregistrer les routes du résumé
 app.register_blueprint(summary_bp)
+app.register_blueprint(metrics_bp)
+app.register_blueprint(alerts_bp)
+app.register_blueprint(predictions_bp)
+app.register_blueprint(distribution_bp)
 
 # Premier endpoint : vérifier le fonctionnement du Backend
 @app.route("/api/health", methods=["GET"])
