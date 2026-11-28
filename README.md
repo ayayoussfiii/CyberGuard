@@ -117,7 +117,7 @@ flowchart LR
 | Sans valeurs invalides | 1 185 789 | 296 461 |
 | **Final** | **682 562** | **108 641** |
 
-**Schéma de `processed.parquet`** : `record_id`, `split` (`train`/`test`), `f00`–`f76`, `label`, `is_attack` (82 colonnes, 791 203 lignes).
+**Schéma de `processed.parquet`** : `record_id`, `split` (`train`/`test`), `f00`–`f76`, `label`, `is_attack` (**81 colonnes**, 791 203 lignes, selon le `select` de `prepare_data.py`).
 
 | Classe | Train | Test |
 |---|---:|---:|
@@ -204,9 +204,10 @@ pip install -r docs\requirements_data.txt
 
 ```bat
 copy .env.example .env
+copy frontend\.env.example frontend\.env
 ```
 
-Renseigner `MONGO_URI` et `MONGO_DB_NAME` dans `.env`. **Ne jamais committer `.env`.**
+Le backend lit `MONGO_URI` et `MONGO_DB_NAME` dans le `.env` à la racine (les variables déjà définies dans le terminal restent prioritaires). Le frontend lit les variables Vite dans `frontend\.env`; `VITE_API_BASE_URL` doit inclure `/api`. **Ne jamais committer les fichiers `.env`.**
 
 ### 3. Préparer les données
 
@@ -221,20 +222,15 @@ Le fichier produit est `data\processed.parquet`.
 
 > **Windows et Parquet.** L'écriture Spark native échoue sans `winutils.exe` (`HADOOP_HOME` non défini). Le script contourne le problème : Spark traite les données, puis pandas/pyarrow écrit le Parquet.
 
-### 4. Entraîner le modèle
+### 4. Entraînement du modèle (à intégrer)
 
-```bat
-python src\detection\train.py
-```
-
-Produit `predictions.csv`, `metrics.json` et le modèle sérialisé *(en cours de développement)*.
+Le fichier `src/detection/train.py` est actuellement vide. Il ne produit donc aucun artefact. Ne pas lancer cette étape avant d’avoir reçu le dataset, le pipeline de preprocessing et le script réel de l’équipe.
 
 ### 5. Lancer MongoDB, l'API puis le frontend
 
 ```bat
 :: Terminal 1 : API Flask
 pip install -r backend\requirements.txt
-python backend\scripts\import_results.py
 python backend\app.py
 
 :: Terminal 2 : frontend React
@@ -243,13 +239,13 @@ npm install
 npm run dev
 ```
 
-Définir l'URL de l'API dans `frontend\.env` (par exemple `VITE_API_BASE_URL=http://localhost:5000`).
+`frontend\.env.example` conserve le mode DEMO. Pour afficher les réponses réelles de l'API, régler `VITE_API_BASE_URL=http://127.0.0.1:5000/api` et `VITE_DEMO_MODE=false`, puis redémarrer Vite. Les routes `/api/alerts` et `/api/predictions` possèdent une pagination serveur (`page`, `limit`). Analytics utilise `/api/analytics` et ne télécharge pas la collection complète.
 
 ---
 
 ## Modèle de données MongoDB
 
-Base : `cyberguard`. Index sur `record_id`, `created_at`, `predicted_label` et `severity`.
+Base : `cyberguard`. Les noms de champs ci-dessous décrivent le contrat envisagé; aucune validation ni création d'index n'est effectuée par le code actuel. Choisir les index après examen des données et des requêtes réelles.
 
 | Collection | Champs |
 |---|---|
@@ -257,7 +253,7 @@ Base : `cyberguard`. Index sur `record_id`, `created_at`, `predicted_label` et `
 | `metrics` | `run_id`, `model_name`, `accuracy`, `precision`, `recall`, `f1`, `macro_f1`, `confusion_matrix`, `test_size`, `created_at` |
 | `alerts` | `record_id`, `severity` (règle documentée), `attack_type`, `predicted_label`, `score`, `status`, `created_at` |
 
-Le script d'import est **idempotent** : une ré-exécution ne crée pas de doublons (clé `record_id` stable).
+`backend/scripts/import_results.py` est vide : aucun import, aucune règle d'idempotence et aucun index ne sont actuellement implémentés. Ne pas lancer ce fichier en attendant l'intégration réelle et la validation du schéma.
 
 ---
 
@@ -267,12 +263,13 @@ Le script d'import est **idempotent** : une ré-exécution ne crée pas de doubl
 |---|---|---|
 | GET | `/api/health` | Statut de Flask et de la connexion MongoDB |
 | GET | `/api/summary` | Volumes, alertes, répartition normal/attaque selon `predicted_label` |
+| GET | `/api/analytics` | Agrégations côté MongoDB; filtres `period` et `attack_type` |
 | GET | `/api/metrics` | Métriques et matrice de confusion (`limit`) |
 | GET | `/api/alerts` | Alertes avec filtres exacts et pagination |
 | GET | `/api/predictions` | Prédictions avec filtres exacts et pagination |
 | GET | `/api/distribution` | Agrégations par classe / type d'attaque |
 
-`/api/metrics` accepte `limit` (100 par défaut, de 1 à 500). `/api/alerts` et `/api/predictions` acceptent `page` (1 par défaut), `limit` (100 par défaut, de 1 à 500) et des filtres par égalité exacte. Les filtres d'alertes sont `record_id`, `severity`, `status`, `attack_type` et `predicted_label`; ceux des prédictions sont `record_id`, `true_label`, `predicted_label` et `attack_type`. Les listes sont triées par `created_at` décroissant. Les paramètres invalides ou inconnus renvoient HTTP 400; les erreurs MongoDB renvoient HTTP 500.
+`/api/analytics` accepte `period` (`24h`, `7d`, `30d`, `90d`, `all`) et `attack_type` (`all` par défaut). Il calcule les agrégations dans MongoDB à partir des champs connus `created_at`, `predicted_label`, `attack_type`, `protocol` et, dans les alertes, les adresses source. Les dates doivent être enregistrées en BSON Date UTC pour les filtres temporels. `probe=1` est réservé au contrôle léger de disponibilité et ne lance pas l’agrégation. `/api/metrics` accepte `limit` (100 par défaut, de 1 à 500). `/api/alerts` et `/api/predictions` acceptent `page` (1 par défaut), `limit` (100 par défaut, de 1 à 500) et des filtres par égalité exacte. Les listes sont triées par `created_at` décroissant. Les paramètres invalides ou inconnus renvoient HTTP 400; les erreurs MongoDB renvoient HTTP 500.
 
 Tous les endpoints renvoient du JSON et gèrent l'indisponibilité de MongoDB.
 

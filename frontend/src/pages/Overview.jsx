@@ -4,7 +4,7 @@ import { Box, Typography, Paper, Skeleton, Alert, Button } from '@mui/material'
 import NetworkActivity from '../components/NetworkActivity'
 import RecentThreats from '../components/RecentThreats'
 import ThreatDistribution from '../components/ThreatDistribution'
-import { getSummary, getMetrics, getActivity, getAlerts, DEMO_MODE } from '../services/api'
+import { getSummary, getMetrics, getActivity, getRecentAlerts, DEMO_MODE } from '../services/api'
 
 const panelStyle = {
   borderRadius: '16px',
@@ -32,7 +32,7 @@ function Overview() {
         getSummary(),
         getMetrics(),
         getActivity(),
-        getAlerts(),
+        getRecentAlerts(5),
       ])
 
       if (!active) return
